@@ -3,10 +3,11 @@ package models
 import "fmt"
 
 type Task struct {
-	ID          int    `json:"id" db:"id"`
-	Title       string `json:"title" db:"title"`
-	Description string `json:"description" db:"description"`
+	TaskID      int    `json:"task_id" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description,omitempty"`
 	Price       int    `json:"price" db:"price"`
+	//AssigneeID  *string    `json:"assignee_id,omitempty"`
 }
 
 type TaskCreate struct {
