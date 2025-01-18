@@ -113,6 +113,10 @@ func IsInvalidToken(err error) bool { // Функция для проверки 
 	return IsErrorType(err, InvalidToken)
 }
 
+func IsAlreadyExists(err error) bool { // Функция для проверки недействительного токена
+	return IsErrorType(err, AlreadyExists)
+}
+
 // Unwrap для поддержки errors.Is и errors.As
 func (e *Error) Unwrap() error {
 	return e.Err

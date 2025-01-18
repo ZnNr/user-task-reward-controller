@@ -2,27 +2,27 @@ package service
 
 import (
 	"context"
-	"crypto/sha1"
 	"fmt"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
 	"github.com/ZnNr/user-task-reward-controller/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
-	"log/slog"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 type AuthService struct {
-	repo     repository.User
-	logger   *slog.Logger
+	repo     repository.AuthRepository
+	logger   *zap.Logger
 	SignKey  string
 	TokenTTL time.Duration
 	Salt     string
 }
 
 type AuthDependencies struct {
-	userRepo repository.User
-	logger   *slog.Logger
+	authRepo repository.AuthRepository
+	logger   *zap.Logger
 	signKey  string
 	tokenTTL time.Duration
 	salt     string
@@ -31,7 +31,7 @@ type AuthDependencies struct {
 func NewAuthService(deps AuthDependencies) *AuthService {
 	fmt.Println(deps)
 	return &AuthService{
-		repo:     deps.userRepo,
+		repo:     deps.authRepo,
 		logger:   deps.logger,
 		SignKey:  deps.signKey,
 		TokenTTL: deps.tokenTTL,
@@ -39,80 +39,81 @@ func NewAuthService(deps AuthDependencies) *AuthService {
 	}
 }
 
-func (s *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *AuthService) Login(ctx context.Context, login *models.SignIn) (string, error) {
 	const op = "service.Auth.Login"
-	s.logger.With("op", op)
+	logger := s.logger.With(zap.String("op", op))
 
-	if username == "" {
-		s.logger.Error("username is required")
-		return "", errors.ErrUsernameRequired
+	if login.Username == "" {
+		logger.Error("username is required")
+		return "", errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-	if password == "" {
-		s.logger.Error("password is required")
-		return "", errors.ErrPasswordRequired
+	if login.Password == "" {
+		logger.Error("password is required")
+		return "", errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-	user, err := s.repo.GetUser(ctx, username, s.generatePasswordHash(password))
+	login.Password, _ = s.generatePasswordHash(login.Password)
+	user, err := s.repo.GetUser(ctx, login)
 	if err != nil {
-		s.logger.Error("cannot get user", slog.String("username", username))
-		return "", errors.ErrCannotGetUser
+		logger.Error("cannot get user", zap.String("Username", login.Username))
+		return "", errors.NewNotFound("user not found", err)
 	}
 	token, err := s.generateToken(user)
 	if err != nil {
-		s.logger.Error("cannot generate token", slog.String("username", username))
-		return "", errors.ErrCannotGenerateToken
+		logger.Error("cannot generate token", zap.String("Username", login.Username))
+		return "", errors.NewInternal("failed to generate token", err)
 	}
 	return token, nil
 }
 
-func (s *AuthService) Register(ctx context.Context, username, password string) error {
+func (s *AuthService) Register(ctx context.Context, signUp *models.CreateUser) error {
 	const op = "service.Auth.Register"
-	s.logger.With("op", op)
+	logger := s.logger.With(zap.String("op", op))
 
-	if username == "" {
-		s.logger.Error("username is required")
-		return errors.ErrUsernameRequired
+	if signUp.Username == "" {
+		logger.Error("username is required")
+		return errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-	if password == "" {
-		s.logger.Error("password is required")
-		return errors.ErrPasswordRequired
+	if signUp.Password == "" {
+		logger.Error("password is required")
+		return errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-	_, err := s.repo.CreateUser(ctx, username, s.generatePasswordHash(password))
+	signUp.Password, _ = s.generatePasswordHash(signUp.Password)
+	_, err := s.repo.CreateUser(ctx, signUp)
 	if err != nil {
-		if err == errors.ErrUserAlreadyExists {
-			s.logger.Error("user already exists", slog.String("username", username))
-			return errors.ErrUserAlreadyExists
+		if errors.IsAlreadyExists(err) {
+			logger.Error("user already exists", zap.String("username", signUp.Username))
+			return errors.NewAlreadyExists("user already exists", err)
 		}
-		s.logger.Error("cannot create user", slog.String("username", username))
-		return errors.ErrCannotCreateUser
+		logger.Error("cannot create user", zap.String("username", signUp.Username))
+		return errors.NewInternal("cannot create user", err)
 	}
 	return nil
 }
 
-func (s *AuthService) GetUserID(ctx context.Context, username, password string) (int, error) {
-	const op = "service.Auth.GetUserID"
-	s.logger.With("op", op)
+func (s *AuthService) GetUser(ctx context.Context, up *models.SignIn) (int64, error) {
+	const op = "service.Auth.GetUser"
+	logger := s.logger.With(zap.String("op", op))
 
-	if username == "" {
-		s.logger.Error("username is required")
-		return 0, errors.ErrUsernameRequired
+	if up.Username == "" {
+		logger.Error("username is required")
+		return 0, errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-	if password == "" {
-		s.logger.Error("password is required")
-		return 0, errors.ErrPasswordRequired
+	if up.Password == "" {
+		logger.Error("password is required")
+		return 0, errors.NewBadRequest(errors.ErrMsgInvalidInput, nil)
 	}
-
-	// Проверяем наличие пользователя и получаем его данные
-	user, err := s.repo.GetUser(ctx, username, s.generatePasswordHash(password))
+	up.Password, _ = s.generatePasswordHash(up.Password)
+	user, err := s.repo.GetUser(ctx, up)
 	if err != nil {
-		s.logger.Error("cannot get user", slog.String("username", username))
-		return 0, errors.ErrCannotGetUser
+		logger.Error("cannot get user", zap.String(" Username", up.Username))
+		return 0, errors.NewNotFound("user not found", err)
 	}
 	return user.ID, nil
 }
 
 func (s *AuthService) generateToken(user models.User) (string, error) {
 	const op = "service.Auth.generateToken"
-	s.logger.With("op", op)
+	logger := s.logger.With(zap.String("op", op))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"expires_at": time.Now().Add(s.TokenTTL).Unix(),
@@ -121,42 +122,44 @@ func (s *AuthService) generateToken(user models.User) (string, error) {
 	})
 	tokenString, err := token.SignedString([]byte(s.SignKey))
 	if err != nil {
-		s.logger.Error("cannot sign token", slog.String("username", user.Username))
-		return "", errors.ErrCannotSignToken
+		logger.Error("cannot sign token", zap.String("username", user.Username))
+		return "", errors.NewInternal("cannot sign token", err)
 	}
 	return tokenString, nil
 }
 
-func (s *AuthService) ParseToken(accessToken string) (int, error) {
+func (s *AuthService) ParseToken(accessToken string) (int64, error) {
 	const op = "service.Auth.ParseToken"
-	s.logger.With("op", op)
+	logger := s.logger.With(zap.String("op", op))
 
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			s.logger.Error(fmt.Sprintf("unexpected signing method: %v", token.Header["alg"]))
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			logger.Error(fmt.Sprintf("unexpected signing method: %v", token.Header["alg"]))
+			return nil, errors.NewInvalidToken("unexpected signing method", nil)
 		}
 		return []byte(s.SignKey), nil
 	})
 	if err != nil {
-		s.logger.Error("cannot parse token", slog.String("accessToken", accessToken))
-		return 0, errors.ErrCannotParseToken
+		logger.Error("cannot parse token", zap.String("accessToken", accessToken))
+		return 0, errors.NewInvalidToken("cannot parse token", err)
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		s.logger.Error("cannot parse token claims", slog.String("accessToken", accessToken))
-		return 0, errors.ErrCannotParseToken
+		logger.Error("cannot parse token claims", zap.String("accessToken", accessToken))
+		return 0, errors.NewInvalidToken("cannot parse token claims", nil)
 	}
 	userId, ok := claims["user_id"].(float64)
 	if !ok {
-		s.logger.Error("cannot get user_id from token claims", slog.String("accessToken", accessToken))
-		return 0, errors.ErrCannotParseToken
+		logger.Error("cannot get user_id from token claims", zap.String("accessToken", accessToken))
+		return 0, errors.NewInvalidToken("cannot get user_id from token claims", nil)
 	}
-	return int(userId), nil
+	return int64(userId), nil
 }
 
-func (s *AuthService) generatePasswordHash(password string) string {
-	hash := sha1.New()
-	hash.Write([]byte(password))
-
-	return fmt.Sprintf("%x", hash.Sum([]byte(s.Salt)))
+func (s *AuthService) generatePasswordHash(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
