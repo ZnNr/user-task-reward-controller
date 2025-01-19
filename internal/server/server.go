@@ -102,7 +102,7 @@ func (a *App) initHTTPServer() error {
 	repos := repository.NewRepositories(a.db)
 
 	// Инициализируем сервисы - остановился здесь
-	service := service.NewService(service.ServicesDependencies{
+	services := service.NewService(service.ServicesDependencies{
 		Repos:    repos,
 		Logger:   a.logger,
 		SignKey:  jwtSignKey, // Используем переданный jwt_sign_key
@@ -112,10 +112,10 @@ func (a *App) initHTTPServer() error {
 	})
 
 	// Создаем обработчики
-	handlers := handlers.NewHandler(service, a.logger)
+	handler := handlers.NewHandler(services, a.logger)
 
 	// Создаем роутер и добавляем маршруты для всех обработчиков
-	r := router.NewRouter(handlers, a.logger) // Импортируйте новый роутер без хендлеров
+	r := router.NewRouter(handler, a.logger) // Импортируйте новый роутер без хендлеров
 
 	// Создаем HTTP сервер
 	a.httpServer = &http.Server{

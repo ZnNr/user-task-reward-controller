@@ -53,10 +53,3 @@ func NewService(deps ServicesDependencies) *Service {
 		User: NewUserService(deps.Repos.UserRepository, deps.Logger),
 	}
 }
-
-//func NewService(repos *repository.Repository) *Service {
-//	return &Service{
-//		Auth: NewAuthService(repos.AuthRepository),
-//		User: NewUserService(repos.UserRepository),
-//		Task: NewTaskService(repos.TaskRepository),
-//	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
-	"github.com/ZnNr/user-task-reward-controller/internal/repository"
 	"github.com/ZnNr/user-task-reward-controller/internal/service/refercode"
 )
 
@@ -22,13 +21,13 @@ const (
 	GetUserQuery = `SELECT user_id, username FROM users WHERE Username = $1 AND Password = $2`
 )
 
-// PostgresUserRepository реализует репозиторий пользователей для PostgreSQL
+// PostgresAuthRepository  реализует репозиторий пользователей для PostgresSQL
 type PostgresAuthRepository struct {
 	db *sql.DB
 }
 
 // NewPostgresUserRepository создает новый экземпляр репозитория пользователей
-func NewPostgresAuthRepository(db *sql.DB) repository.AuthRepository {
+func NewPostgresAuthRepository(db *sql.DB) *PostgresAuthRepository {
 	return &PostgresAuthRepository{db: db}
 }
 

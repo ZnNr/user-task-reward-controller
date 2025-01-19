@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
-	"github.com/ZnNr/user-task-reward-controller/internal/repository"
+	//"github.com/ZnNr/user-task-reward-controller/internal/repository"
 	"github.com/ZnNr/user-task-reward-controller/internal/service/refercode"
 	"log"
 )
@@ -15,7 +15,7 @@ import (
 const (
 	addTaskQuery            = `INSERT INTO tasks (title, description, price) VALUES ($1, $2, $3) RETURNING task_id`
 	checkTaskDuplicateQuery = `SELECT COUNT(*) FROM tasks WHERE title = $1 AND description = $2 AND task_id <> $3`
-	completeTaskQuery       = `SELECT task_id, price FROM %s WHERE id=$1`
+	completeTaskQuery       = `SELECT task_id, price FROM tasks WHERE id=$1`
 	userQuery               = `SELECT task_id, balance, refer_from FROM users WHERE task_id=$1`
 	completeQuery           = `INSERT INTO task_complete(user_id, task_id) VALUES ($1, $2)`
 	balanceToUserQuery      = `UPDATE users SET balance=balance+$1 WHERE id=$2`
@@ -27,7 +27,7 @@ type PostgresTaskRepository struct {
 }
 
 // NewTaskRepository creates a new task repository with a given database connection.
-func NewPostgresTaskRepository(db *sql.DB) repository.TaskRepository {
+func NewPostgresTaskRepository(db *sql.DB) *PostgresTaskRepository {
 	return &PostgresTaskRepository{db: db}
 }
 

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
-	"github.com/ZnNr/user-task-reward-controller/internal/repository"
+	//"github.com/ZnNr/user-task-reward-controller/internal/repository"
 )
 
 // SQL-запросы
@@ -22,7 +22,7 @@ type PostgresUserRepository struct {
 }
 
 // NewPostgresUserRepository создает новый экземпляр репозитория пользователей
-func NewPostgresUserRepository(db *sql.DB) repository.UserRepository {
+func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
 	return &PostgresUserRepository{db: db}
 }
 

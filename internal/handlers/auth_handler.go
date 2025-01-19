@@ -13,7 +13,7 @@ type UserIDResponse struct {
 	Id int64 `json:"user_id"`
 }
 
-// Регистрация нового пользователя
+// RegisterHandler Регистрация нового пользователя
 func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Handling  register new user in system request")
 	var user models.CreateUser
@@ -29,7 +29,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	h.jsonResponse(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
 }
 
-// Авторизация пользователя
+// LoginHandler Авторизация пользователя
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Handling  login user request")
 	var user models.SignIn
@@ -53,7 +53,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	h.jsonResponse(w, http.StatusOK, map[string]string{"message": "Login successful"})
 }
 
-// Получение идентификатора пользователя
+// GetUserHandler Получение идентификатора пользователя
 func (h *Handler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Handling  user login an password request")
 	var req models.SignIn
