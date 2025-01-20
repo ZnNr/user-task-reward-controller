@@ -12,7 +12,7 @@ import (
 const (
 	// Запрос для создания пользователя
 	CreateUserQuery = `
-    INSERT INTO users (Username, Password, Refer_code) VALUES ($1, $2, $3) RETURNING ID`
+    INSERT INTO users (Username, Password, Refer_code) VALUES ($1, $2, $3) RETURNING user_id`
 
 	// Проверка существования пользователя
 	CheckUserExistsQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE Username = $1 OR Email = $2)`
@@ -52,16 +52,11 @@ func (r *PostgresAuthRepository) CreateUser(ctx context.Context, user *models.Cr
 	}
 	defer stmt.Close()
 
-	// Выполнение SQL-запроса
-	res, err := stmt.ExecContext(ctx, user.Username, user.Password, referCode)
+	// Получение ID созданного пользователя
+	var lastID int64
+	err = stmt.QueryRowContext(ctx, user.Username, user.Password, referCode).Scan(&lastID)
 	if err != nil {
 		return 0, errors.NewInternal("Failed to execute query to create user", err)
-	}
-
-	// Получение ID созданного пользователя
-	lastID, err := res.LastInsertId()
-	if err != nil {
-		return 0, errors.NewInternal("Failed to retrieve last insert ID", err)
 	}
 
 	return lastID, nil

@@ -2,9 +2,9 @@ CREATE TABLE IF NOT EXISTS users
 (
     user_id SERIAL PRIMARY KEY not null,
     username VARCHAR(255) not null unique,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) UNIQUE,
     balance INT not null DEFAULT 0,
-    password_hash VARCHAR(255) not null,
+    password VARCHAR(255) not null,
     refer_from VARCHAR(255) DEFAULT null,
     refer_code VARCHAR(255) DEFAULT null
 );

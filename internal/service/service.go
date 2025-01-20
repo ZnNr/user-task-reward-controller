@@ -9,10 +9,10 @@ import (
 )
 
 type Auth interface {
-	Login(ctx context.Context, login *models.SignIn) (string, error)
-	Register(ctx context.Context, signUp *models.CreateUser) error
+	Login(ctx context.Context, credentials *models.SignIn) (string, error)
+	Register(ctx context.Context, userInfo *models.CreateUser) error
 	ParseToken(token string) (int64, error)
-	GetUser(ctx context.Context, up *models.SignIn) (int64, error)
+	GetUser(ctx context.Context, username *models.SignIn) (int64, error)
 }
 type User interface {
 	GetUserInfo(userId int64) (models.User, error)

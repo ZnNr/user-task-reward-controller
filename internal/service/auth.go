@@ -57,6 +57,7 @@ func (s *AuthService) Login(ctx context.Context, login *models.SignIn) (string, 
 		logger.Error("cannot get user", zap.String("Username", login.Username))
 		return "", errors.NewNotFound("user not found", err)
 	}
+
 	token, err := s.generateToken(user)
 	if err != nil {
 		logger.Error("cannot generate token", zap.String("Username", login.Username))

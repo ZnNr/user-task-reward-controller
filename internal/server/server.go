@@ -107,7 +107,7 @@ func (a *App) initHTTPServer() error {
 		Logger:   a.logger,
 		SignKey:  jwtSignKey, // Используем переданный jwt_sign_key
 		TokenTTL: tokenTTL,   // Используем переданный token_ttl
-		Salt:     hasherSalt, // Используем переданный hasher_salt
+		Salt:     hasherSalt, // Используем переданный hashes_salt
 
 	})
 

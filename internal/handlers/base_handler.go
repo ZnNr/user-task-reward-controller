@@ -12,6 +12,13 @@ import (
 func JWTMiddleware(authService service.Auth) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Пропускаем проверку токена для маршрута регистрации
+			if r.URL.Path == "/auth/registration" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Проверка наличия токена в cookie
 			cookie, err := r.Cookie("token")
 			if err != nil {
 				http.Error(w, "Missing token", http.StatusUnauthorized)
@@ -19,10 +26,14 @@ func JWTMiddleware(authService service.Auth) func(next http.Handler) http.Handle
 			}
 			tokenString := cookie.Value
 
+			// Валидация токена
 			userId, err := authService.ParseToken(tokenString)
 			if err != nil {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				return
 			}
+
+			// Добавляем userId в контекст запроса
 			r = r.WithContext(context.WithValue(r.Context(), "userID", userId))
 			next.ServeHTTP(w, r)
 		})

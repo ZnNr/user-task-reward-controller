@@ -22,35 +22,45 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Services.Auth.Register(r.Context(), &user); err != nil {
+	err := h.Services.Auth.Register(r.Context(), &user)
+	if err != nil {
 		h.httpError(w, errors.NewBadRequest("Failed to register user: "+err.Error(), err))
 		return
 	}
+
 	h.jsonResponse(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
 }
 
 // LoginHandler Авторизация пользователя
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debug("Handling  login user request")
+	h.logger.Debug("Handling login user request")
+
 	var user models.SignIn
+	// Декодирование JSON из тела запроса
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		h.httpError(w, errors.NewBadRequest(errors.ErrMsgInvalidInput, err))
 		return
 	}
 
+	// Вызов метода авторизации
 	token, err := h.Services.Auth.Login(r.Context(), &user)
 	if err != nil {
 		h.httpError(w, errors.NewBadRequest("Failed to authenticate user", err))
 		return
 	}
 
+	// Установка cookie с токеном
 	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   token,
-		Expires: time.Now().Add(time.Hour),
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(time.Hour),
+		Path:     "/",
+		Secure:   true, //  используется HTTPS
+		HttpOnly: true, // Защита от XSS-атак
 	})
 
-	h.jsonResponse(w, http.StatusOK, map[string]string{"message": "Login successful"})
+	// Ответ клиенту с сообщением об успешном входе
+	h.jsonResponse(w, http.StatusOK, map[string]string{"message": "Login successful", "token": token})
 }
 
 // GetUserHandler Получение идентификатора пользователя
