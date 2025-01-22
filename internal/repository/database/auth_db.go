@@ -12,13 +12,13 @@ import (
 const (
 	// Запрос для создания пользователя
 	CreateUserQuery = `
-    INSERT INTO users (Username, Password, Refer_code) VALUES ($1, $2, $3) RETURNING user_id`
+    INSERT INTO users (username, password, refer_code) VALUES ($1, $2, $3) RETURNING user_id`
 
 	// Проверка существования пользователя
-	CheckUserExistsQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE Username = $1 OR Email = $2)`
+	CheckUserExistsQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $2)`
 
 	// Получение пользователя по имени пользователя и паролю
-	GetUserQuery = `SELECT user_id, username FROM users WHERE Username = $1 AND Password = $2`
+	GetUserQuery = `SELECT user_id, username FROM users WHERE username = $1 AND password = $2`
 )
 
 // PostgresAuthRepository  реализует репозиторий пользователей для PostgresSQL

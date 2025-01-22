@@ -15,6 +15,7 @@ type AuthRepository interface {
 type UserRepository interface {
 	GetUserInfo(userID int64) (models.User, error)
 	GetUsersLeaderboard() ([]models.User, error)
+	GetUserID(ctx context.Context, usernameOrEmail string) (int64, error)
 }
 
 type TaskRepository interface {

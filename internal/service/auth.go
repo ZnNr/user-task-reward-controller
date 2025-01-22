@@ -164,3 +164,15 @@ func (s *AuthService) generatePasswordHash(password string) (string, error) {
 	}
 	return string(hashedPassword), nil
 }
+
+// HashPassword хеширует пароль
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+// Проверка пароля
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}

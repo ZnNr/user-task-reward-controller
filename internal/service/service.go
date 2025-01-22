@@ -17,6 +17,7 @@ type Auth interface {
 type User interface {
 	GetUserInfo(userId int64) (models.User, error)
 	GetUsersLeaderboard() ([]models.User, error)
+	GetUserID(ctx context.Context, usernameOrEmail string) (int64, error)
 }
 
 type Task interface {

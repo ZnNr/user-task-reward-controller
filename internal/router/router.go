@@ -37,7 +37,7 @@ func NewRouter(
 func setupAuthRoutes(router *mux.Router, handler *handlers.Handler) {
 	router.HandleFunc("/register", handler.RegisterHandler).Methods("POST")
 	router.HandleFunc("/login", handler.LoginHandler).Methods("POST")
-	//router.HandleFunc("/get_user_id", handler.GetUserIDHandler).Methods("POST")
+	router.HandleFunc("/public/{user_id}", handler.GetUserIDbyUsernameOrEmailHandler).Methods("GET")
 
 }
 

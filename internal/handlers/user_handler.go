@@ -6,6 +6,7 @@ import (
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // Получение информации о пользователе
@@ -69,4 +70,33 @@ func (h *Handler) UserReferrerCode(w http.ResponseWriter, r *http.Request) {
 	h.jsonResponse(w, http.StatusOK, map[string]string{
 		"success": "ok",
 	})
+}
+
+func (h *Handler) GetUserIDbyUsernameOrEmailHandler(w http.ResponseWriter, r *http.Request) {
+	h.logger.Debug("Handling Get User ID by username or email request")
+	// Проверка метода запроса (GET)
+	if r.Method != http.MethodGet {
+		h.httpError(w, errors.NewBadRequest("Method not allowed", nil))
+		return
+	}
+
+	// Получаем параметр имени пользователя или email из строки запроса
+	usernameOrEmail := r.URL.Query().Get("username_or_email")
+	if strings.TrimSpace(usernameOrEmail) == "" {
+		http.Error(w, "Query parameter 'username_or_email' is required", http.StatusBadRequest)
+		return
+	}
+
+	//// Получаем контекст для передачи в репозиторий
+	//ctx := r.Context()
+
+	// Вызов сервиса для получения ID пользователя
+	userID, err := h.Services.User.GetUserID(r.Context(), usernameOrEmail)
+	if err != nil {
+		h.handleServiceError(w, err) // централизованная обработка ошибок
+		return
+	}
+
+	// Формирование и отправка JSON-ответа
+	h.jsonResponse(w, http.StatusOK, UserIDResponse{Id: userID})
 }

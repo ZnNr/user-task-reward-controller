@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
@@ -10,10 +11,16 @@ import (
 // SQL-запросы
 const (
 	// Получение таблицы лидеров по балансу
-	GetLeaderboardByBalanceQuery = `SELECT user_id, Username, Balance, Refer_code, Refer_from FROM users ORDER BY Balance DESC`
+	GetLeaderboardByBalanceQuery = `SELECT user_id, username, balance, refer_code, refer_from FROM users ORDER BY balance DESC`
 
 	// Получение информации о пользователе по ID
-	GetUserByIDQuery = `SELECT user_id, Username, Email, Balance, Refer_code, Refer_from FROM users WHERE ID = $1`
+	GetUserByIDQuery = `SELECT user_id, username, email, balance, refer_code, refer_from FROM users WHERE user_id = $1`
+
+	// Получить ID пользователя по имени пользователя или email
+	GetUserIDQuery = `
+    SELECT user_id 
+    FROM users 
+    WHERE username = $1 OR email = $2`
 )
 
 // PostgresUserRepository реализует репозиторий пользователей для PostgreSQL
@@ -63,4 +70,17 @@ func (r *PostgresUserRepository) GetUserInfo(userID int64) (models.User, error) 
 	}
 
 	return user, nil
+}
+
+// GetUserID возвращает user_id пользователя по имени пользователя или email
+func (r *PostgresUserRepository) GetUserID(ctx context.Context, usernameOrEmail string) (int64, error) {
+	var userID int64
+	err := r.db.QueryRowContext(ctx, GetUserIDQuery, usernameOrEmail, usernameOrEmail).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, errors.NewNotFound("User ID not found", nil)
+		}
+		return 0, errors.NewInternal("Failed to fetch user ID", err)
+	}
+	return userID, nil
 }
