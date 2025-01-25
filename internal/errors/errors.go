@@ -1,6 +1,8 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // ErrorType - тип для обозначения категории ошибки.
 type ErrorType string
@@ -13,12 +15,19 @@ const (
 	Validation    ErrorType = "VALIDATION"
 	AlreadyExists ErrorType = "ALREADY_EXISTS"
 	InvalidToken  ErrorType = "INVALID_TOKEN" // Новая ошибка для недействительного токена
-
-	ErrMsgInvalidInput = "invalid input parameters"
-	ErrMsgInternal     = "internal server error"
-	ErrMsgNotFound     = "resource not found"
-	ErrMsgInvalidToken = "invalid token" // Сообщение для недействительного токена
+	Unauthorized  ErrorType = "UNAUTHORIZED"
 )
+
+// Сообщения для ошибок.
+var ErrorMessage = map[ErrorType]string{
+	NotFound:      "resource not found",
+	BadRequest:    "invalid input parameters",
+	Internal:      "internal server error",
+	Validation:    "validation failed",
+	AlreadyExists: "resource already exists",
+	InvalidToken:  "invalid token",
+	Unauthorized:  "unauthorized access",
+}
 
 // StatusCode - мапа с кодами статуса для каждого типа ошибки.
 var StatusCode = map[ErrorType]int{
@@ -27,7 +36,8 @@ var StatusCode = map[ErrorType]int{
 	Internal:      500,
 	Validation:    422,
 	AlreadyExists: 409,
-	InvalidToken:  401, // Код состояния для недействительного токена
+	InvalidToken:  401,
+	Unauthorized:  401,
 }
 
 // Error - структура, представляющая ошибку с дополнительной информацией.
@@ -55,6 +65,9 @@ func (e *Error) Status() int {
 
 // NewError создает новую ошибку с заданным типом и сообщением.
 func NewError(errorType ErrorType, message string, err error) *Error {
+	if message == "" {
+		message = ErrorMessage[errorType]
+	}
 	return &Error{
 		Type:    errorType,
 		Message: message,
@@ -63,7 +76,6 @@ func NewError(errorType ErrorType, message string, err error) *Error {
 }
 
 // Удобные функции для создания ошибок конкретных типов.
-
 func NewNotFound(message string, err error) *Error {
 	return NewError(NotFound, message, err)
 }
@@ -92,6 +104,10 @@ func NewInvalidToken(message string, err error) *Error {
 	return NewError(InvalidToken, message, err) // Новая функция для недействительного токена
 }
 
+func NewUnauthorized(message string, err error) *Error {
+	return NewError(Unauthorized, message, err) // Новая функция для недействительного токена
+}
+
 // Проверки типов ошибок.
 func IsErrorType(err error, errorType ErrorType) bool {
 	if e, ok := err.(*Error); ok {
@@ -115,6 +131,10 @@ func IsInvalidToken(err error) bool { // Функция для проверки 
 
 func IsAlreadyExists(err error) bool { // Функция для проверки недействительного токена
 	return IsErrorType(err, AlreadyExists)
+}
+
+func IsUnauthorized(err error) bool { // Функция для проверки недействительного токена
+	return IsErrorType(err, Unauthorized)
 }
 
 // Unwrap для поддержки errors.Is и errors.As

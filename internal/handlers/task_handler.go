@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
@@ -17,49 +19,58 @@ func (h *Handler) TaskCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//if err := task.Validate(); err != nil {
-	//	h.httpError(w, errors.NewInternal(err.Error(), nil))
-	//	return
-	//}
-	// Извлечение контекста
 	ctx := r.Context()
 	newTaskId, err := h.Services.CreateTask(ctx, &task)
 	if err != nil {
-		h.httpError(w, errors.NewInternal(err.Error(), nil))
+		h.logger.Error("Failed to create task", zap.Error(err))
+		h.handleServiceError(w, err)
 		return
 	}
 
-	h.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	response := map[string]interface{}{
 		"new_task_id": newTaskId,
-	})
+	}
+
+	h.jsonResponse(w, http.StatusOK, response)
 }
 
 // Завершение задачи
 func (h *Handler) TaskComplete(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Handling  complete task request")
-	var taskComplete struct {
-		TaskId int `json:"task_id"`
+	vars := mux.Vars(r)
+	userIDStr, exists := vars["user_id"]
+	if !exists {
+		h.logger.Error("User ID is required")
+		h.httpError(w, errors.NewBadRequest("User ID is required", nil))
+		return
 	}
 
-	userId, err := strconv.Atoi(r.URL.Query().Get("id"))
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
-		h.httpError(w, errors.NewBadRequest("Invalid user_id param", err))
+		h.logger.Error("Invalid User ID", zap.Error(err))
+		h.httpError(w, errors.NewBadRequest("Invalid user id param", err))
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&taskComplete); err != nil {
-		h.httpError(w, errors.NewBadRequest("Invalid input body", err))
+	var req struct {
+		TaskID int64 `json:"task_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("Failed to decode JSON body", zap.Error(err))
+		h.httpError(w, errors.NewBadRequest("Invalid request payload", err))
 		return
 	}
 
-	if err := h.Services.CompleteTask(int64(userId), int64(taskComplete.TaskId)); err != nil {
-		h.httpError(w, errors.NewInternal(err.Error(), nil))
+	err = h.Services.CompleteTask(r.Context(), userID, req.TaskID)
+	if err != nil {
+		h.logger.Error("Failed to complete task", zap.Error(err))
+		h.handleServiceError(w, err)
 		return
 	}
-
-	h.jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"success": "ok",
-	})
+	response := map[string]string{
+		"Success message": "Task completed successfully",
+	}
+	h.jsonResponse(w, http.StatusOK, response)
 }
 
 // Получение всех задач
@@ -67,13 +78,16 @@ func (h *Handler) TaskGetAll(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("Handling  get all tasks from repo request")
 	tasks, err := h.Services.GetAllTasks()
 	if err != nil {
-		h.httpError(w, errors.NewInternal(err.Error(), nil))
+		h.logger.Error("Failed to get all tasks", zap.Error(err))
+		h.httpError(w, errors.NewInternal("Failed to get all tasks", err))
 		return
 	}
 
-	h.jsonResponse(w, http.StatusOK, struct {
+	response := struct {
 		Data []models.Task `json:"tasks"`
 	}{
 		Data: tasks,
-	})
+	}
+
+	h.jsonResponse(w, http.StatusOK, response)
 }

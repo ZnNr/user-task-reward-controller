@@ -9,7 +9,8 @@ import (
 
 type AuthRepository interface {
 	CreateUser(ctx context.Context, user *models.CreateUser) (int64, error)
-	GetUser(ctx context.Context, req *models.SignIn) (models.User, error)
+	GetUser(ctx context.Context, req *models.SignIn) (*models.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 }
 
 type UserRepository interface {
@@ -20,7 +21,7 @@ type UserRepository interface {
 
 type TaskRepository interface {
 	CreateTask(ctx context.Context, req *models.TaskCreate) (int64, error)
-	CompleteTask(userId, taskId int64) error
+	CompleteTask(ctx context.Context, userId, taskId int64) error
 	GetAllTasks() ([]models.Task, error)
 	ReferrerCode(userId int64, refCode string) error
 }

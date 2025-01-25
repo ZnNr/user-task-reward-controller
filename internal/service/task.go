@@ -26,25 +26,16 @@ func (s *TaskService) CreateTask(ctx context.Context, req *models.TaskCreate) (i
 		zap.String("title", req.Title),
 		zap.String("description", req.Description),
 		zap.Int("price", req.Price))
-
 	// Валидация запроса
 	if err := validateTaskRequest(req); err != nil {
 		s.logger.Error("Validation failed", zap.Error(err))
 		return 0, err
 	}
-
-	task := &models.TaskCreate{
-		Title:       req.Title,
-		Description: req.Description,
-		Price:       req.Price,
-	}
-
-	taskID, err := s.repo.CreateTask(ctx, task)
+	taskID, err := s.repo.CreateTask(ctx, req)
 	if err != nil {
 		s.logger.Error("Failed to create task", zap.Error(err))
 		return 0, err
 	}
-
 	s.logger.Info("Task created successfully", zap.String("title", req.Title))
 	return taskID, nil
 }
@@ -60,8 +51,8 @@ func validateTaskRequest(req *models.TaskCreate) error {
 	return nil
 }
 
-func (s *TaskService) CompleteTask(userId, taskId int64) error {
-	return s.repo.CompleteTask(userId, taskId)
+func (s *TaskService) CompleteTask(ctx context.Context, userId, taskId int64) error {
+	return s.repo.CompleteTask(ctx, userId, taskId)
 }
 
 func (s *TaskService) GetAllTasks() ([]models.Task, error) {

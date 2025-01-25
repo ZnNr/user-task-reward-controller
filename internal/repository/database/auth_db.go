@@ -13,12 +13,12 @@ const (
 	// Запрос для создания пользователя
 	CreateUserQuery = `
     INSERT INTO users (username, password, refer_code) VALUES ($1, $2, $3) RETURNING user_id`
-
 	// Проверка существования пользователя
 	CheckUserExistsQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $2)`
-
 	// Получение пользователя по имени пользователя и паролю
-	GetUserQuery = `SELECT user_id, username FROM users WHERE username = $1 AND password = $2`
+	GetUserQuery = `SELECT user_id, username, password, email FROM users WHERE username = $1 AND password = $2`
+	// Получение пользователя по имени пользователя
+	GetUserByUsernameQuery = `SELECT user_id, username, password, email FROM users WHERE username = $1`
 )
 
 // PostgresAuthRepository  реализует репозиторий пользователей для PostgresSQL
@@ -41,24 +41,20 @@ func (r *PostgresAuthRepository) CreateUser(ctx context.Context, user *models.Cr
 	if exists {
 		return 0, errors.NewAlreadyExists("User already exists", nil)
 	}
-
 	// Генерация реферального кода
 	referCode := refercode.RandStringBytes()
-
 	// Подготовка SQL-запроса
 	stmt, err := r.db.PrepareContext(ctx, CreateUserQuery)
 	if err != nil {
 		return 0, errors.NewInternal("Failed to prepare statement", err)
 	}
 	defer stmt.Close()
-
 	// Получение ID созданного пользователя
 	var lastID int64
 	err = stmt.QueryRowContext(ctx, user.Username, user.Password, referCode).Scan(&lastID)
 	if err != nil {
 		return 0, errors.NewInternal("Failed to execute query to create user", err)
 	}
-
 	return lastID, nil
 }
 
@@ -73,17 +69,29 @@ func (r *PostgresAuthRepository) checkUserExists(ctx context.Context, user *mode
 }
 
 // GetUser возвращает пользователя по имени и паролю
-func (r *PostgresAuthRepository) GetUser(ctx context.Context, req *models.SignIn) (models.User, error) {
+func (r *PostgresAuthRepository) GetUser(ctx context.Context, req *models.SignIn) (*models.User, error) {
 	row := r.db.QueryRowContext(ctx, GetUserQuery, req.Username, req.Password)
-
 	var user models.User
-	err := row.Scan(&user.ID, &user.Username)
+	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, errors.NewNotFound("User not found", err)
+			return nil, errors.NewNotFound("User not found", err)
 		}
-		return models.User{}, errors.NewInternal("Error fetching user", err)
+		return nil, errors.NewInternal("Error fetching user", err)
 	}
+	return &user, nil
+}
 
-	return user, nil
+// GetUserByUsername возвращает пользователя по имени пользователя
+func (r *PostgresAuthRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	row := r.db.QueryRowContext(ctx, GetUserByUsernameQuery, username)
+	var user models.User
+	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.NewNotFound("User not found", err)
+		}
+		return nil, errors.NewInternal("Error fetching user", err)
+	}
+	return &user, nil
 }

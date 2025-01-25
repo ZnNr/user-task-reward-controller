@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/ZnNr/user-task-reward-controller/internal/errors"
 	"github.com/ZnNr/user-task-reward-controller/internal/models"
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,23 +13,35 @@ import (
 
 // Получение информации о пользователе
 func (h *Handler) UserInfo(w http.ResponseWriter, r *http.Request) {
-	userId, err := strconv.Atoi(r.URL.Query().Get("id"))
+	vars := mux.Vars(r)
+	userIDStr, exists := vars["user_id"]
+	if !exists {
+		h.logger.Error("User ID is required")
+		h.httpError(w, errors.NewBadRequest("User ID is required", nil))
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
+		h.logger.Error("Invalid User ID", zap.Error(err))
 		h.httpError(w, errors.NewBadRequest("Invalid user id param", err))
 		return
 	}
 
-	userInfo, err := h.Services.GetUserInfo(int64(userId))
+	userInfo, err := h.Services.GetUserInfo(userID)
 	if err != nil {
-		h.httpError(w, errors.NewInternal(err.Error(), nil))
+		h.logger.Error("Failed to get user info", zap.Int64("UserID", userID), zap.Error(err))
+		h.handleServiceError(w, err)
 		return
 	}
 
-	h.jsonResponse(w, http.StatusOK, struct {
+	response := struct {
 		User models.User `json:"user"`
 	}{
 		User: userInfo,
-	})
+	}
+
+	h.jsonResponse(w, http.StatusOK, response)
 }
 
 // Топ пользователей на основе статистики
@@ -37,12 +51,13 @@ func (h *Handler) UsersLeaderboard(w http.ResponseWriter, r *http.Request) {
 		h.httpError(w, errors.NewInternal(err.Error(), nil))
 		return
 	}
-
-	h.jsonResponse(w, http.StatusOK, struct {
+	response := struct {
 		Data []models.User `json:"data"`
 	}{
 		Data: users,
-	})
+	}
+
+	h.jsonResponse(w, http.StatusOK, response)
 }
 
 // Обработка реферального кода
@@ -51,7 +66,7 @@ func (h *Handler) UserReferrerCode(w http.ResponseWriter, r *http.Request) {
 		ReferrerCode string `json:"referral_code"`
 	}
 
-	userId, err := strconv.Atoi(r.URL.Query().Get("id"))
+	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 	if err != nil {
 		h.httpError(w, errors.NewBadRequest("Invalid user_id param", err))
 		return
@@ -67,9 +82,11 @@ func (h *Handler) UserReferrerCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.jsonResponse(w, http.StatusOK, map[string]string{
+	response := map[string]interface{}{
 		"success": "ok",
-	})
+	}
+
+	h.jsonResponse(w, http.StatusOK, response)
 }
 
 func (h *Handler) GetUserIDbyUsernameOrEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +97,13 @@ func (h *Handler) GetUserIDbyUsernameOrEmailHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Получаем параметр имени пользователя или email из строки запроса
-	usernameOrEmail := r.URL.Query().Get("username_or_email")
+	// Извлечение параметра username_or_email из пути URL
+	vars := mux.Vars(r)
+	usernameOrEmail := vars["username_or_email"]
 	if strings.TrimSpace(usernameOrEmail) == "" {
-		http.Error(w, "Query parameter 'username_or_email' is required", http.StatusBadRequest)
+		http.Error(w, "Path parameter 'username_or_email' is required", http.StatusBadRequest)
 		return
 	}
-
-	//// Получаем контекст для передачи в репозиторий
-	//ctx := r.Context()
 
 	// Вызов сервиса для получения ID пользователя
 	userID, err := h.Services.User.GetUserID(r.Context(), usernameOrEmail)
@@ -96,7 +111,8 @@ func (h *Handler) GetUserIDbyUsernameOrEmailHandler(w http.ResponseWriter, r *ht
 		h.handleServiceError(w, err) // централизованная обработка ошибок
 		return
 	}
+	response := UserIDResponse{Id: userID}
 
-	// Формирование и отправка JSON-ответа
-	h.jsonResponse(w, http.StatusOK, UserIDResponse{Id: userID})
+	// Ответ клиенту с информацией о пользователе
+	h.jsonResponse(w, http.StatusOK, response)
 }

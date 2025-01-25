@@ -21,10 +21,8 @@ import (
 )
 
 const (
-	schema     = "migration/000001_init_schema.up.sql"
 	jwtSignKey = "joiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI"
 	tokenTTL   = 120 * time.Minute
-	hasherSalt = "Jc3N1ZXI"
 )
 
 // App структура приложения
@@ -78,9 +76,7 @@ func (a *App) runMigrations() error {
 		return fmt.Errorf("failed to create database driver: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migration",
-		"postgres", driver)
+	m, err := migrate.NewWithDatabaseInstance("file://migration", "postgres", driver)
 	if err != nil {
 		a.logger.Error("Failed to create migration instance", zap.Error(err))
 		// Продолжим работу, даже если есть проблемы с миграциями
@@ -107,7 +103,6 @@ func (a *App) initHTTPServer() error {
 		Logger:   a.logger,
 		SignKey:  jwtSignKey, // Используем переданный jwt_sign_key
 		TokenTTL: tokenTTL,   // Используем переданный token_ttl
-		Salt:     hasherSalt, // Используем переданный hashes_salt
 
 	})
 

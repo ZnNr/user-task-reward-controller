@@ -2,7 +2,10 @@ package refercode
 
 import "math/rand"
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	rewardProcent = 10
+)
 
 func RandStringBytes() string {
 	n := 15
@@ -11,4 +14,12 @@ func RandStringBytes() string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func Reward(price int) int {
+	if price < 10 {
+		return 1
+	}
+
+	return price/rewardProcent + 1
 }

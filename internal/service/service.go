@@ -10,9 +10,9 @@ import (
 
 type Auth interface {
 	Login(ctx context.Context, credentials *models.SignIn) (string, error)
-	Register(ctx context.Context, userInfo *models.CreateUser) error
+	Register(ctx context.Context, userInfo *models.CreateUser) (int64, error)
 	ParseToken(token string) (int64, error)
-	GetUser(ctx context.Context, username *models.SignIn) (int64, error)
+	GetUser(ctx context.Context, up *models.SignIn) (*models.User, error)
 }
 type User interface {
 	GetUserInfo(userId int64) (models.User, error)
@@ -22,7 +22,7 @@ type User interface {
 
 type Task interface {
 	CreateTask(ctx context.Context, req *models.TaskCreate) (int64, error)
-	CompleteTask(userId, taskId int64) error
+	CompleteTask(tx context.Context, userId, taskId int64) error
 	GetAllTasks() ([]models.Task, error)
 	ReferrerCode(userId int64, refCode string) error
 }
@@ -38,7 +38,6 @@ type ServicesDependencies struct {
 	Logger   *zap.Logger
 	SignKey  string
 	TokenTTL time.Duration
-	Salt     string
 }
 
 func NewService(deps ServicesDependencies) *Service {
@@ -48,7 +47,6 @@ func NewService(deps ServicesDependencies) *Service {
 			logger:   deps.Logger,
 			signKey:  deps.SignKey,
 			tokenTTL: deps.TokenTTL,
-			salt:     deps.Salt,
 		}),
 		Task: NewTaskService(deps.Repos.TaskRepository, deps.Logger),
 		User: NewUserService(deps.Repos.UserRepository, deps.Logger),
