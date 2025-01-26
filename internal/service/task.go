@@ -22,21 +22,27 @@ func NewTaskService(repo repository.TaskRepository, logger *zap.Logger) *TaskSer
 
 // CreateTask создает новую задачу.
 func (s *TaskService) CreateTask(ctx context.Context, req *models.TaskCreate) (int64, error) {
-	s.logger.Info("Creating new task",
+	const op = "service.Task.CreateTask"
+	logger := s.logger.With(zap.String("op", op))
+
+	logger.Info("Creating new task",
 		zap.String("title", req.Title),
 		zap.String("description", req.Description),
 		zap.Int("price", req.Price))
+
 	// Валидация запроса
 	if err := validateTaskRequest(req); err != nil {
-		s.logger.Error("Validation failed", zap.Error(err))
+		logger.Error("Validation failed", zap.Error(err))
 		return 0, err
 	}
+
 	taskID, err := s.repo.CreateTask(ctx, req)
 	if err != nil {
-		s.logger.Error("Failed to create task", zap.Error(err))
+		logger.Error("Failed to create task", zap.Error(err))
 		return 0, err
 	}
-	s.logger.Info("Task created successfully", zap.String("title", req.Title))
+
+	logger.Info("Task created successfully", zap.Int64("task_id", taskID), zap.String("title", req.Title))
 	return taskID, nil
 }
 
@@ -51,14 +57,36 @@ func validateTaskRequest(req *models.TaskCreate) error {
 	return nil
 }
 
+// CompleteTask завершает задачу и обновляет баланс пользователя.
 func (s *TaskService) CompleteTask(ctx context.Context, userId, taskId int64) error {
-	return s.repo.CompleteTask(ctx, userId, taskId)
+	const op = "service.Task.CompleteTask"
+	logger := s.logger.With(zap.String("op", op))
+
+	logger.Info("Completing task", zap.Int64("user_id", userId), zap.Int64("task_id", taskId))
+
+	err := s.repo.CompleteTask(ctx, userId, taskId)
+	if err != nil {
+		logger.Error("Failed to complete task", zap.Error(err))
+		return err
+	}
+
+	logger.Info("Task completed successfully", zap.Int64("user_id", userId), zap.Int64("task_id", taskId))
+	return nil
 }
 
-func (s *TaskService) GetAllTasks() ([]models.Task, error) {
-	return s.repo.GetAllTasks()
-}
+// GetAllTasks возвращает все задачи.
+func (s *TaskService) GetAllTasks(ctx context.Context) ([]models.Task, error) {
+	const op = "service.Task.GetAllTasks"
+	logger := s.logger.With(zap.String("op", op))
 
-func (s *TaskService) ReferrerCode(userId int64, refCode string) error {
-	return s.repo.ReferrerCode(userId, refCode)
+	logger.Info("Fetching all tasks")
+
+	tasks, err := s.repo.GetAllTasks(ctx)
+	if err != nil {
+		logger.Error("Failed to fetch all tasks", zap.Error(err))
+		return nil, err
+	}
+
+	logger.Info("All tasks fetched successfully", zap.Int("tasks_count", len(tasks)))
+	return tasks, nil
 }

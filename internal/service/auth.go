@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// AuthService структура для работы с аутентификацией и регистрацией пользователей
 type AuthService struct {
 	repo     repository.AuthRepository
 	logger   *zap.Logger
@@ -19,6 +20,7 @@ type AuthService struct {
 	TokenTTL time.Duration
 }
 
+// AuthDependencies зависимости для создания AuthService
 type AuthDependencies struct {
 	authRepo repository.AuthRepository
 	logger   *zap.Logger
@@ -26,6 +28,7 @@ type AuthDependencies struct {
 	tokenTTL time.Duration
 }
 
+// NewAuthService создает новый экземпляр AuthService
 func NewAuthService(deps AuthDependencies) *AuthService {
 	return &AuthService{
 		repo:     deps.authRepo,
@@ -35,6 +38,7 @@ func NewAuthService(deps AuthDependencies) *AuthService {
 	}
 }
 
+// Login выполняет вход пользователя и возвращает токен
 func (s *AuthService) Login(ctx context.Context, login *models.SignIn) (string, error) {
 	const op = "service.Auth.Login"
 	logger := s.logger.With(zap.String("op", op))
@@ -66,9 +70,12 @@ func (s *AuthService) Login(ctx context.Context, login *models.SignIn) (string, 
 		logger.Error("cannot generate token", zap.String("Username", login.Username), zap.Error(err))
 		return "", errors.NewInternal(errors.ErrorMessage[errors.Internal], err)
 	}
+
+	logger.Info("User logged in successfully", zap.String("Username", login.Username))
 	return token, nil
 }
 
+// Register регистрирует нового пользователя
 func (s *AuthService) Register(ctx context.Context, signUp *models.CreateUser) (int64, error) {
 	const op = "service.Auth.Register"
 	logger := s.logger.With(zap.String("op", op))
@@ -90,9 +97,12 @@ func (s *AuthService) Register(ctx context.Context, signUp *models.CreateUser) (
 		logger.Error("cannot create user", zap.String("username", signUp.Username))
 		return 0, errors.NewInternal(errors.ErrorMessage[errors.Internal], err)
 	}
+
+	logger.Info("User registered successfully", zap.Int64("user_id", userId))
 	return userId, nil
 }
 
+// GetUser получает пользователя по имени и паролю
 func (s *AuthService) GetUser(ctx context.Context, up *models.SignIn) (*models.User, error) {
 	const op = "service.Auth.GetUser"
 	logger := s.logger.With(zap.String("op", op))
@@ -112,9 +122,12 @@ func (s *AuthService) GetUser(ctx context.Context, up *models.SignIn) (*models.U
 		}
 		return nil, errors.NewInternal(errors.ErrorMessage[errors.Internal], err)
 	}
+
+	logger.Info("User fetched successfully", zap.Int64("user_id", user.ID))
 	return user, nil
 }
 
+// generateToken генерирует JWT токен для пользователя
 func (s *AuthService) generateToken(user models.User) (string, error) {
 	const op = "service.Auth.generateToken"
 	logger := s.logger.With(zap.String("op", op))
@@ -128,9 +141,11 @@ func (s *AuthService) generateToken(user models.User) (string, error) {
 		logger.Error("cannot sign token", zap.String("username", user.Username))
 		return "", errors.NewInternal(errors.ErrorMessage[errors.Internal], err)
 	}
+	logger.Info("Token generated successfully", zap.String("username", user.Username))
 	return tokenString, nil
 }
 
+// ParseToken разбирает JWT токен и возвращает ID пользователя
 func (s *AuthService) ParseToken(accessToken string) (int64, error) {
 	const op = "service.Auth.ParseToken"
 	logger := s.logger.With(zap.String("op", op))
@@ -155,9 +170,12 @@ func (s *AuthService) ParseToken(accessToken string) (int64, error) {
 		logger.Error("cannot get user_id from token claims", zap.String("accessToken", accessToken))
 		return 0, errors.NewInvalidToken(errors.ErrorMessage[errors.InvalidToken], nil)
 	}
+
+	logger.Info("Token parsed successfully", zap.Float64("user_id", userId))
 	return int64(userId), nil
 }
 
+// generatePasswordHash генерирует хэш пароля
 func (s *AuthService) generatePasswordHash(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

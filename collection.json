@@ -1,0 +1,266 @@
+{
+  "info": {
+    "_postman_id": "your-collection-id",
+    "name": "User Task Reward Controller API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register New User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"securepassword123\",\n  \"email\": \"john.doe@example.com\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/auth/register",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"securepassword123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/auth/login",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "tests": [
+          "pm.test('Token is generated', function () { pm.environment.set('jwt_token', pm.response.json().token); });"
+        ]
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Tasks (Public)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/task/all",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "task",
+            "all"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create New Task (Protected)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"New Task\",\n  \"description\": \"This is a new task description.\",\n  \"price\": 50\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/task/create",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "task",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Complete Task (Protected)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"task_id\": 456\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/task/123/complete",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "task",
+            "123",
+            "complete"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Set Referrer Code (Protected)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refer_code\": \"ABC123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users/123/refferer?user_id=1",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "users",
+            "123",
+            "refferer"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get User Info (Protected)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/users/123/status",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "users",
+            "123",
+            "status"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Users Leaderboard (Protected)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/users/leaderboard",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "users",
+            "leaderboard"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get User ID by Username or Email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/auth/users/john_doe",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "auth",
+            "users",
+            "john_doe"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

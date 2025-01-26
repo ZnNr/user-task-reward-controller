@@ -10,11 +10,15 @@ import (
 	"strings"
 )
 
+// UserIDResponse структура для возврата идентификатора пользователя
+type UserIDResponse struct {
+	Id int64 `json:"user_id"`
+}
+
 // Список маршрутов, которые не требуют авторизации
 var noAuthRoutes = map[string]map[string]bool{
 	"/auth/register": {http.MethodPost: true},
 	"/auth/login":    {http.MethodPost: true},
-	"/public/":       {http.MethodGet: true}, // Обработаем параметры через префиксы.
 }
 
 // Проверяет, является ли маршрут свободным от авторизации
@@ -27,11 +31,16 @@ func isNoAuthRoute(path, method string) bool {
 	return false
 }
 
+// JWTMiddleware создает middleware для проверки JWT токена
 func JWTMiddleware(authService service.Auth, logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			const op = "handlers.JWTMiddleware"
+			logger := logger.With(zap.String("op", op))
+
 			path := r.URL.Path
 			method := r.Method
+
 			// Проверяем маршрут в noAuthRoutes
 			if isNoAuthRoute(path, method) {
 				next.ServeHTTP(w, r)
@@ -77,19 +86,21 @@ func JWTMiddleware(authService service.Auth, logger *zap.Logger) func(next http.
 	}
 }
 
+// Handler структура для работы с HTTP-запросами
 type Handler struct {
-	logger   *zap.Logger
 	Services *service.Service
+	logger   *zap.Logger
 }
 
+// NewHandler создает новый экземпляр Handler
 func NewHandler(services *service.Service, logger *zap.Logger) *Handler {
 	return &Handler{
-		logger:   logger,
 		Services: services,
+		logger:   logger,
 	}
 }
 
-// Унифицированная обработка ошибок сервиса
+// handleServiceError Унифицированная обработка ошибок сервиса
 func (h *Handler) handleServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.IsBadRequest(err):
@@ -107,7 +118,7 @@ func (h *Handler) handleServiceError(w http.ResponseWriter, err error) {
 	}
 }
 
-// Обработка HTTP ошибок
+// httpError отправляет ошибку клиенту
 func (h *Handler) httpError(w http.ResponseWriter, err *errors.Error) {
 	h.logger.Error("Handling error", zap.Error(err))
 	//var status int
@@ -127,7 +138,7 @@ func (h *Handler) httpError(w http.ResponseWriter, err *errors.Error) {
 	h.jsonResponse(w, err.Status(), errorResponse)
 }
 
-// Общая функция для отправки JSON-ответов
+// jsonResponse отправляет JSON-ответ клиенту
 func (h *Handler) jsonResponse(w http.ResponseWriter, statusCode int, payload interface{}) {
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")

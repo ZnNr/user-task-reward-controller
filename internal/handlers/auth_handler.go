@@ -9,17 +9,16 @@ import (
 	"time"
 )
 
-// UserIDResponse структура для возврата идентификатора пользователя
-type UserIDResponse struct {
-	Id int64 `json:"user_id"`
-}
-
 // RegisterHandler Регистрация нового пользователя
 func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debug("Handling register new user in system request")
+	const op = "handlers.RegisterHandler"
+	logger := h.logger.With(zap.String("op", op))
+
+	logger.Debug("Handling register new user in system request")
+
 	var user models.CreateUser
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		h.logger.Error("Failed to decode JSON body", zap.Error(err))
+		logger.Error("Failed to decode JSON body", zap.Error(err))
 		h.httpError(w, errors.NewInvalidArgument("Invalid input data", err))
 		return
 	}
@@ -27,8 +26,8 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Вызов метода регистрации с получением идентификатора пользователя
 	userId, err := h.Services.Auth.Register(r.Context(), &user)
 	if err != nil {
-		h.logger.Error("Failed to register user", zap.Error(err))
-		h.httpError(w, errors.NewBadRequest("Failed to register user: "+err.Error(), err))
+		logger.Error("Failed to register user", zap.Error(err))
+		h.handleServiceError(w, err)
 		return
 	}
 
@@ -42,21 +41,27 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 // LoginHandler Авторизация пользователя
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debug("Handling login user request")
+	const op = "handlers.LoginHandler"
+	logger := h.logger.With(zap.String("op", op))
+
+	logger.Debug("Handling login user request")
+
 	var user models.SignIn
 	// Декодирование JSON из тела запроса
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		h.logger.Error("Failed to decode JSON body", zap.Error(err))
+		logger.Error("Failed to decode JSON body", zap.Error(err))
 		h.httpError(w, errors.NewInvalidArgument("Invalid input data", err))
 		return
 	}
+
 	// Вызов метода авторизации
 	token, err := h.Services.Auth.Login(r.Context(), &user)
 	if err != nil {
-		h.logger.Error("Failed to authenticate user", zap.Error(err))
-		h.httpError(w, errors.NewBadRequest("Failed to authenticate user", err))
+		logger.Error("Failed to authenticate user", zap.Error(err))
+		h.handleServiceError(w, err)
 		return
 	}
+
 	// Установка cookie с токеном
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
@@ -67,31 +72,35 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true, // Защита от XSS-атак
 	})
 
-	// Ответ клиенту с сообщением об успешным логином
+	// Ответ клиенту с сообщением об успешном входе
 	response := map[string]interface{}{
 		"message": "User Login successful",
 		"token":   token,
 	}
-	// Ответ клиенту с сообщением об успешном входе
 	h.jsonResponse(w, http.StatusOK, response)
 }
 
-// GetUserHandler Получение идентификатора пользователя
+// GetUserHandler Получение информации о пользователе по имени пользователя и паролю
 func (h *Handler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	h.logger.Debug("Handling user login and password request")
+	const op = "handlers.GetUserHandler"
+	logger := h.logger.With(zap.String("op", op))
+
+	logger.Debug("Handling user login and password request")
+
 	var req models.SignIn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("Failed to decode JSON body", zap.Error(err))
+		logger.Error("Failed to decode JSON body", zap.Error(err))
 		h.httpError(w, errors.NewInvalidArgument(errors.ErrorMessage[errors.BadRequest], err))
 		return
 	}
+
 	user, err := h.Services.Auth.GetUser(r.Context(), &req)
 	if err != nil {
-		h.logger.Error("Failed to get user ID", zap.Error(err))
+		logger.Error("Failed to get user ID", zap.Error(err))
 		h.handleServiceError(w, err)
 		return
 	}
-	response := UserIDResponse{Id: user.ID}
 
+	response := UserIDResponse{Id: user.ID}
 	h.jsonResponse(w, http.StatusOK, response)
 }

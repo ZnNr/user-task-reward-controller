@@ -113,10 +113,10 @@ func setupProtectedAPIRoutes(router *mux.Router, handler *handlers.Handler) {
 	// Регистрируем маршруты для пользователей
 	/*
 
-		curl -X POST "http://localhost:8080/api/users/123/refferer" \
+		curl -X POST "http://localhost:8080/api/users/123/refferer?user_id=1" \
 		-H "Content-Type: application/json" \
 		-d '{
-		  "ref_code": "ABC123"
+		  "refer_code": "ABC123"
 		}'
 	*/
 
@@ -128,8 +128,8 @@ func setupProtectedAPIRoutes(router *mux.Router, handler *handlers.Handler) {
 	router.HandleFunc("/users/leaderboard", handler.UsersLeaderboard).Methods("GET")
 
 	//примеры запросов
-	//curl -X GET "http://localhost:8080/auth/public/john_doe"
-	//curl -X GET "http://localhost:8080/auth/public/example@example.com"
+	//curl -X GET "http://localhost:8080/auth/users/john_doe"
+	//curl -X GET "http://localhost:8080/auth/users/example@example.com"
 
 	//пример ответа {"user_id": 123 }
 	router.HandleFunc("/users/{username_or_email}", handler.GetUserIDbyUsernameOrEmailHandler).Methods("GET")

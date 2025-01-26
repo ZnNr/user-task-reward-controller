@@ -16,9 +16,12 @@ import (
 )
 
 func main() {
+	const op = "main.main"
+	logger := zap.L().With(zap.String("op", op))
+
 	// Загружаем переменные окружения из файла .env
 	if err := loadEnv(); err != nil {
-		log.Fatalf("Error loading environment variables: %v", err)
+		logger.Fatal("Error loading environment variables", zap.Error(err))
 	}
 
 	// Инициализируем логгер
@@ -41,7 +44,9 @@ func main() {
 	}
 
 	// Запускаем приложение в горутине
-	go runApplication(application, logger)
+	go func() {
+		runApplication(application, logger)
+	}()
 
 	// Ожидаем сигнал для graceful shutdown
 	waitForShutdown(application, logger)
@@ -57,7 +62,7 @@ func loadEnv() error {
 		return fmt.Errorf("error loading .env file: %w", err)
 	}
 
-	// вывод переменных .env для отладки
+	// Вывод переменных .env для отладки
 	fmt.Println("Environment variables loaded:")
 	fmt.Printf("DB_USER: %s\n", os.Getenv("DB_USER"))
 	fmt.Printf("DB_PASSWORD: %s\n", os.Getenv("DB_PASSWORD"))
@@ -67,7 +72,11 @@ func loadEnv() error {
 
 // initLogger инициализирует логгер.
 func initLogger() (*zap.Logger, error) {
-	return zap.NewProduction()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+	return logger, nil
 }
 
 // syncLogger синхронизирует логгер для безопасного завершения работы.
@@ -89,6 +98,7 @@ func waitForShutdown(application *server.App, logger *zap.Logger) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	logger.Info("Received shutdown signal")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -96,6 +106,5 @@ func waitForShutdown(application *server.App, logger *zap.Logger) {
 	if err := application.Shutdown(ctx); err != nil {
 		logger.Fatal("Failed to shutdown application", zap.Error(err))
 	}
-
-	logger.Info("Application stopped")
+	logger.Info("Application stopped gracefully")
 }
