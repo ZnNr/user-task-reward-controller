@@ -94,7 +94,7 @@ func (a *App) runMigrations() error {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migration",
+		"file:///app/migration",
 		"postgres",
 		driver,
 	)

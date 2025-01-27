@@ -33,10 +33,10 @@ COPY --from=builder /app/user-task-reward-controller .
 COPY --from=builder /app/.env .
 
 # Обеспечиваем наличие прав на выполнение
-RUN chmod +x ./user-reward-controller
+RUN chmod +x ./user-task-reward-controller
 
 # Проверяем, что файл есть и он исполняемый
-RUN ls -l ./user-reward-controller
+RUN ls -l ./user-task-reward-controller
 
 # Указываем команду по умолчанию для запуска приложения
 CMD ["./user-task-reward-controller"]

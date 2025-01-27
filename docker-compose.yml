@@ -17,8 +17,7 @@ services:
   # Контейнер для приложения
   app:
     build: .
-    env_file:
-      - .env
+
     depends_on:
       - db                                       # Зависимость от базы данных
     ports:
@@ -30,6 +29,7 @@ services:
       DB_PASSWORD: postgres                      # Пароль пользователя базы данных
       DB_NAME: user_reward_db                    # Имя базы данных
       SERVER_PORT: 8080                          # Порт сервера приложения
-
+    volumes:
+      - ./migration:/app/migration
 volumes:
   pg_data:                                      # Данные базы данных будут храниться в этом томе
