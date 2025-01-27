@@ -170,7 +170,7 @@
           "raw": "{\n  \"refer_code\": \"ABC123\"\n}"
         },
         "url": {
-          "raw": "http://localhost:8080/api/users/123/refferer?user_id=1",
+          "raw": "http://localhost:8080/api/users/123/refferer",
           "host": [
             "localhost"
           ],
@@ -248,7 +248,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8080/auth/users/john_doe",
+          "raw": "http://localhost:8080/api/users/john_doe",
           "host": [
             "localhost"
           ],

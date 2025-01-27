@@ -1,4 +1,115 @@
-# user-reward-controler
+# user-task-reward-controler
+
+запуск:
+Запсукаем докер десктоп
+собираем контейнеры
+docker-compose up --build
+
+Если контейнер с приложением не запустился, запускаем его повторно в докер десктопе
+
+тестируем приложение черех postman
+
+коллекция в корне приложения
+
+
+
+примеры curl-x для тестирования маршрутов в файле router
+
+
+маршрут auth/register
+	/*
+			curl -X POST "http://localhost:8080/auth/register" \
+			-H "Content-Type: application/json" \
+			-d '{
+			"username": "john_doe",
+				"password": "securepassword123",
+				"email": "john.doe@example.com"
+		}'
+	*/
+	//Пример успешного ответа
+	/*
+		{
+		  "message": "User registered successfully",
+		  "user_id": 123
+		}
+	*/
+	
+
+маршрут auth/login"
+
+	/*
+		curl -X POST "http://localhost:8080/auth/login" \
+		-H "Content-Type: application/json" \
+		-d '{
+		  "username": "john_doe",
+		  "password": "securepassword123"
+		}'
+	*/
+	//Пример ответа от сервера
+
+	/*
+		{
+		  "message": "Login successful",
+		  "token": "your_jwt_token_here"
+		}
+	*/
+
+
+
+
+маршрут api/task/create
+
+	/*
+			curl -X POST "http://localhost:8080/api/task/create" \
+			-H "Content-Type: application/json" \
+			-d '{
+			"title": "New Task",
+				"description": "This is a new task description.",
+				"price": 50
+		}'
+	*/
+
+маршрут api/task/all
+
+	//curl -X GET "http://localhost:8080/api/task/all"
+	router.HandleFunc("/task/all", handler.TaskGetAll).Methods("GET")
+	/*
+			curl -X POST "http://localhost:8080/api/task/123/complete" \
+			-H "Content-Type: application/json" \
+			-d '{
+			"task_id": 456
+		}'
+	*/
+
+маршрут api/users/123/refferer
+	/*
+
+		curl -X POST "http://localhost:8080/api/users/123/refferer" \
+		-H "Content-Type: application/json" \
+		-d '{
+		  "refer_code": "ABC123"
+		}'
+	*/
+
+маршрут	api/users/id/status"
+
+	//curl -X GET "http://localhost:8080/api/users/123/status"
+
+маршрут	api/users/leaderboard
+
+	//curl -X GET "http://localhost:8080/api/users/leaderboard"
+
+маршрут для поиска по имени или емейлу
+
+	//примеры запросов
+	//curl -X GET "http://localhost:8080/api/users/john_doe"
+	//curl -X GET "http://localhost:8080/api/users/example@example.com"
+
+	//пример ответа {"user_id": 123 }
+	
+}
+
+
 
 Реализовать простой HTTP сервер для управления пользователями на языке Go
 

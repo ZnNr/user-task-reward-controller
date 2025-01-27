@@ -81,7 +81,7 @@ func setupAuthRoutes(router *mux.Router, handler *handlers.Handler) {
 // setupAPIRoutes настраивает общие маршруты для API
 func setupAPIRoutes(router *mux.Router, handler *handlers.Handler) {
 	// Регистрируем маршруты, которые могут быть открытыми или имеют специальные условия
-	router.HandleFunc("/task/all", handler.TaskGetAll).Methods("GET") // Предположим, что этот маршрут открыт для всех
+	router.HandleFunc("/task/all", handler.TaskGetAll).Methods("GET")
 }
 
 // setupProtectedAPIRoutes настраивает защищенные маршруты для API
@@ -113,7 +113,7 @@ func setupProtectedAPIRoutes(router *mux.Router, handler *handlers.Handler) {
 	// Регистрируем маршруты для пользователей
 	/*
 
-		curl -X POST "http://localhost:8080/api/users/123/refferer?user_id=1" \
+		curl -X POST "http://localhost:8080/api/users/123/refferer" \
 		-H "Content-Type: application/json" \
 		-d '{
 		  "refer_code": "ABC123"
@@ -128,8 +128,8 @@ func setupProtectedAPIRoutes(router *mux.Router, handler *handlers.Handler) {
 	router.HandleFunc("/users/leaderboard", handler.UsersLeaderboard).Methods("GET")
 
 	//примеры запросов
-	//curl -X GET "http://localhost:8080/auth/users/john_doe"
-	//curl -X GET "http://localhost:8080/auth/users/example@example.com"
+	//curl -X GET "http://localhost:8080/api/users/john_doe"
+	//curl -X GET "http://localhost:8080/api/users/example@example.com"
 
 	//пример ответа {"user_id": 123 }
 	router.HandleFunc("/users/{username_or_email}", handler.GetUserIDbyUsernameOrEmailHandler).Methods("GET")
