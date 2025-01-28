@@ -1,7 +1,7 @@
 # user-task-reward-controler
 
 запуск:
-Запсукаем докер десктоп
+Запуcкаем Docker Desktop
 собираем контейнеры
 docker-compose up --build
 
@@ -9,11 +9,28 @@ docker-compose up --build
 
 тестируем приложение черех postman
 
-коллекция в корне приложения
+коллекция в корне приложения collection.json
 
+перед тестированием приложения локально (не собирая приложение в контейнер), необходимо отредактировать путь к файлу миграции в пакете server в функции // runMigrations
+изменить "file:///app/migration", на "file://migration",
+далее развернуть базу данный в контенере services:
+  # Контейнер для базы данных
+  db:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_DB: user_reward_db               # Имя базы данных
+      POSTGRES_USER: postgres                    # Имя пользователя
+      POSTGRES_PASSWORD: postgres                 # Пароль пользователя
+    ports:
+      - "5432:5432"                              # Проброс порта для доступа к БД
+    volumes:
+      - pg_data:/var/lib/postgresql/data         # Хранение данных
 
+либо сконфигурировать базу локально согласно настройкам в файле env
+запустить приложение go run main.go
 
-примеры curl-x для тестирования маршрутов в файле router
+примеры curl-x для тестирования маршрутов в в комментариях к маршрутам файле router
 
 
 маршрут auth/register
